@@ -39,13 +39,14 @@ class ChatVC: MessagesViewController {
     public var user: User!
     public var chat: Chats!
     public var chatType: ChatType!
+    public var userImage: UIImage?
     
     
     // MARK: - Life Cycle
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        
+       addImageToNavBar(with: userImage)
         
         title = chatTitle
         
@@ -66,10 +67,17 @@ class ChatVC: MessagesViewController {
         super.viewWillAppear(animated)
         
         initMessageViewModel()
+        
+        
     }
     
     deinit {
         viewModel.removeListener()
+    }
+    
+    // MARK: - Actions
+    @objc func barButtonItemTapped() {
+        
     }
     
     // MARK: - Helpers
@@ -86,7 +94,7 @@ class ChatVC: MessagesViewController {
     }
     
     private func isTimeLabelVisible(at indexPath: IndexPath) -> Bool {
-        return indexPath.section % 3 == 0 && !viewModel.isPreviousMessageSameSender(at: indexPath)
+        return true
     }
     
     private func cameraButtonPressed() {
@@ -127,6 +135,15 @@ class ChatVC: MessagesViewController {
         messagesCollectionView.messagesLayoutDelegate = self
         messagesCollectionView.messagesDisplayDelegate = self
     }
+    
+    private func addImageToNavBar(with image: UIImage?) {
+        
+        let button = UIButton.init(type: .custom)
+        button.setImage(image, for: .normal)
+        button.addTarget(self, action: #selector(barButtonItemTapped), for: .touchUpInside)
+
+        self.navigationItem.rightBarButtonItem = UIBarButtonItem(customView: button)
+    }
 }
 
 // MARK: - MessagesDisplayDelegate
@@ -134,9 +151,9 @@ class ChatVC: MessagesViewController {
 extension ChatVC: MessagesDisplayDelegate {
     
     func textColor(for message: MessageType, at indexPath: IndexPath, in messagesCollectionView: MessagesCollectionView) -> UIColor {
-        return isFromCurrentSender(message: message) ? .white : .white
+        return isFromCurrentSender(message: message) ? .black : .black
     }
-    
+   
     func detectorAttributes(for detector: DetectorType, and message: MessageType, at indexPath: IndexPath) -> [NSAttributedString.Key: Any] {
         switch detector {
         case .hashtag, .mention:
@@ -160,7 +177,7 @@ extension ChatVC: MessagesDisplayDelegate {
         case .emoji:
             return .clear
         default:
-            return isFromCurrentSender(message: message) ? .clear : .incomingMessage
+           return isFromCurrentSender(message: message) ? .primary : UIColor(red: 230/255, green: 230/255, blue: 230/255, alpha: 1)
         }
     }
     
@@ -197,25 +214,25 @@ extension ChatVC: MessagesDisplayDelegate {
             let mask = CAShapeLayer()
             mask.path = path.cgPath
             view.layer.mask = mask
-            if self.isFromCurrentSender(message: message) {
-                gradientLayer.colors = [#colorLiteral(red: 0.2666666667, green: 0.1960784314, blue: 0.6784313725, alpha: 1).cgColor, #colorLiteral(red: 0.3098039216, green: 0.6980392157, blue: 0.9921568627, alpha: 1).cgColor]
-                gradientLayer.startPoint = CGPoint(x: 0.0, y: 0.5)
-                gradientLayer.endPoint = CGPoint(x: 1.0, y: 0.5)
-
-                gradientLayer.locations = [0.15, 1.0]
-                gradientLayer.frame = view.bounds
-                
-                view.layer.insertSublayer(gradientLayer, below: view.layer.sublayers?.last)
-            } else {
-                gradientLayer.colors = [#colorLiteral(red: 0.1294117647, green: 0.1568627451, blue: 0.2588235294, alpha: 1).cgColor, #colorLiteral(red: 0.07843137255, green: 0.1098039216, blue: 0.2196078431, alpha: 1).cgColor]
-                gradientLayer.startPoint = CGPoint(x: 0.0, y: 0.5)
-                gradientLayer.endPoint = CGPoint(x: 1.0, y: 0.5)
-
-                gradientLayer.locations = [0.15, 1.0]
-                gradientLayer.frame = view.bounds
-                
-                view.layer.insertSublayer(gradientLayer, below: view.layer.sublayers?.last)
-            }
+//            if self.isFromCurrentSender(message: message) {
+//                gradientLayer.colors = [#colorLiteral(red: 0.2666666667, green: 0.1960784314, blue: 0.6784313725, alpha: 1).cgColor, #colorLiteral(red: 0.3098039216, green: 0.6980392157, blue: 0.9921568627, alpha: 1).cgColor]
+//                gradientLayer.startPoint = CGPoint(x: 0.0, y: 0.5)
+//                gradientLayer.endPoint = CGPoint(x: 1.0, y: 0.5)
+//
+//                gradientLayer.locations = [0.15, 1.0]
+//                gradientLayer.frame = view.bounds
+//
+//                view.layer.insertSublayer(gradientLayer, below: view.layer.sublayers?.last)
+//            } else {
+//                gradientLayer.colors = [#colorLiteral(red: 0.1294117647, green: 0.1568627451, blue: 0.2588235294, alpha: 1).cgColor, #colorLiteral(red: 0.07843137255, green: 0.1098039216, blue: 0.2196078431, alpha: 1).cgColor]
+//                gradientLayer.startPoint = CGPoint(x: 0.0, y: 0.5)
+//                gradientLayer.endPoint = CGPoint(x: 1.0, y: 0.5)
+//
+//                gradientLayer.locations = [0.15, 1.0]
+//                gradientLayer.frame = view.bounds
+//
+//                view.layer.insertSublayer(gradientLayer, below: view.layer.sublayers?.last)
+//            }
             
         }
     }
@@ -231,15 +248,6 @@ extension ChatVC: MessagesDisplayDelegate {
             avatarView.layer.borderColor = UIColor.primary.cgColor
         }
     }
-    
-    //    func messageStyle(for message: MessageType, at indexPath: IndexPath,
-    //                      in messagesCollectionView: MessagesCollectionView) -> MessageStyle {
-    //
-//            let corner: MessageStyle.TailCorner = isFromCurrentSender(message: message) ? .bottomRight : .bottomLeft
-//
-//            return .bubbleTail(corner, .curved)
-    //    }
-    
 }
 
 

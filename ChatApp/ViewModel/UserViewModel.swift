@@ -13,7 +13,7 @@ class UserViewModel {
     // MARK: - Private Variables
     private weak var delegate: UserViewModelDelegate?
     private var isFetchInProgress = false
-    private var user: Users!
+    private var user: Users?
     private var placeHolderText: String?
      
     // MARK: - Public Variables
@@ -21,26 +21,26 @@ class UserViewModel {
     public var currentUser = Auth.auth().currentUser
     
     public var name: String? {
-        let userName = user.name.components(separatedBy: " ").first
+        let userName = user?.name.components(separatedBy: " ").first
         return userName
     }
     
     public var lastName: String? {
-        if user.name.contains(" ") {
-            let userLastName = user.name.components(separatedBy: " ").last
+        if user?.name.contains(" ") ?? false {
+            let userLastName = user?.name.components(separatedBy: " ").last
             return userLastName
         } else {
             return nil
         }
     }
     
-    public var username: String {
-        let username = user.username ?? "No Username"
+    public var username: String? {
+        let username = user?.username ?? "No Username"
         return "@\(username)"
     }
     
     public var profileImage: UIImage? {
-        return user.image
+        return user?.image
     }
     
     public var profileImagePlaceHolder: String? {
@@ -75,9 +75,12 @@ class UserViewModel {
                     return
                 }
                 
-                self.user = Users(document: snap)
+                guard let user = Users(document: snap) else {
+                    return
+                }
+                self.user = user
                 self.isFetchInProgress = false
-                self.downloadProfileImage(of: self.user)
+                self.downloadProfileImage(of: user)
                 self.delegate?.onFetchCompleted()
             }
             self.isFetchInProgress = false
@@ -142,7 +145,7 @@ class UserViewModel {
                     return
                 }
                 
-                self.user.image = image
+                self.user?.image = image
                 self.delegate?.downloadImageCompleted()
                 self.placeHolderText = nil
                 
@@ -155,7 +158,7 @@ class UserViewModel {
     }
     
     private func uploadImage(_ image: UIImage, completion: @escaping (URL?) -> Void) {
-        guard let id = user.id else {
+        guard let id = user?.id else {
             completion(nil)
             return
         }

@@ -17,9 +17,7 @@ class LoginVC: UIViewController {
     @IBOutlet weak var signInBtn: GIDSignInButton!
     
     // MARK: - Private Variables
-    private var handle: AuthStateDidChangeListenerHandle?
-    
-    let auth = Auth.auth()
+    private let auth = Auth.auth()
 
     // MARK: - View Did Load
     override func viewDidLoad() {
@@ -29,13 +27,6 @@ class LoginVC: UIViewController {
         
         signInBtn.colorScheme = .dark
         signInBtn.style = .wide
-    }
-    
-    // MARK: - Deinit
-    deinit {
-        if let handle = handle {
-            Auth.auth().removeStateDidChangeListener(handle)
-        }
     }
     
     // MARK: - Actions
@@ -53,8 +44,34 @@ class LoginVC: UIViewController {
     
     private func signInUser() {
         GIDSignIn.sharedInstance()?.presentingViewController = self
-        handle = Auth.auth().addStateDidChangeListener() { [unowned self] (auth, user) in
-            if user != nil {
+        GIDSignIn.sharedInstance().delegate = self
+    }
+}
+
+extension LoginVC: GIDSignInDelegate {
+    func sign(_ signIn: GIDSignIn!, didSignInFor user: GIDGoogleUser!, withError error: Error?) {
+        
+        if let error = error {
+            print("Error \(error)")
+        } else {
+            guard let authentication = user.authentication else { return }
+            
+            let credential = GoogleAuthProvider.credential(withIDToken: authentication.idToken, accessToken: authentication.accessToken)
+            
+            Auth.auth().signIn(with: credential) { [unowned self] (user, error) in
+                if let error = error {
+                    print("Error \(error)")
+                    return
+                }
+                
+                let name = user?.additionalUserInfo?.profile?["name"] as? String
+                // Save user's name based on its Google profile
+                DataService.shared.name = name
+                DataService.shared.id = user?.user.uid
+                let user = Users(name: DataService.shared.name ?? "No name", id: user?.user.uid ?? "", username: nil)
+                print(user.representation)
+                DataService.shared.createUser(user: user)
+                
                 DataService.shared.isAuthenticated = true
                 self.dismiss(animated: true) {
                     self.showHomeVC()

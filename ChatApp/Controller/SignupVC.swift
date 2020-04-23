@@ -18,7 +18,7 @@ class SignupVC: UIViewController {
     @IBOutlet weak var usernameTxtField: BottomBorderTxtField!
     
     // MARK: - Private Variables
-    private var handle: AuthStateDidChangeListenerHandle?
+    private var username: String?
     
     let auth = Auth.auth()
 
@@ -32,13 +32,6 @@ class SignupVC: UIViewController {
         signInBtn.style = .wide
         signInBtn.isEnabled = false
         usernameTxtField.addTarget(self, action: #selector(editingChanged(_:)), for: .editingChanged)
-    }
-    
-    // MARK: - Deinit
-    deinit {
-        if let handle = handle {
-            Auth.auth().removeStateDidChangeListener(handle)
-        }
     }
     
     // MARK: - Helpers
@@ -55,12 +48,7 @@ class SignupVC: UIViewController {
     
     private func signInUser() {
         GIDSignIn.sharedInstance()?.presentingViewController = self
-        handle = Auth.auth().addStateDidChangeListener() { [unowned self] (auth, user) in
-            if user != nil {
-                DataService.shared.isAuthenticated = true
-                self.showHomeVC()
-            }
-        }
+        GIDSignIn.sharedInstance().delegate = self
     }
     
     @objc private func editingChanged(_ textField: UITextField) {
@@ -75,9 +63,38 @@ class SignupVC: UIViewController {
             return
         }
         
-        let appDelegate = UIApplication.shared.delegate as! AppDelegate
-        appDelegate.username = username
+        self.username = username
             
         signInBtn.isEnabled = true
+    }
+}
+
+extension SignupVC: GIDSignInDelegate {
+    func sign(_ signIn: GIDSignIn!, didSignInFor user: GIDGoogleUser!, withError error: Error?) {
+        
+        if let error = error {
+            print("Error \(error)")
+        } else {
+            guard let authentication = user.authentication else { return }
+            
+            let credential = GoogleAuthProvider.credential(withIDToken: authentication.idToken, accessToken: authentication.accessToken)
+            
+            Auth.auth().signIn(with: credential) { [unowned self] (user, error) in
+                if let error = error {
+                    print("Error \(error)")
+                    return
+                }
+                let name = user?.additionalUserInfo?.profile?["name"] as? String
+                // Save user's name based on its Google profile
+                DataService.shared.name = name
+                DataService.shared.id = user?.user.uid
+                let user = Users(name: DataService.shared.name ?? "No name", id: user?.user.uid ?? "", username: self.username)
+                print(user.representation)
+                DataService.shared.createUser(user: user)
+                
+                DataService.shared.isAuthenticated = true
+                self.showHomeVC()
+            }
+        }
     }
 }

@@ -18,7 +18,7 @@ class HomeVC: UIViewController {
     private var viewModel: ChatsViewModel!
     private var chat: Chats!
 
-    // MARK: - Life Cycle
+    // MARK: - Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
         
@@ -31,6 +31,7 @@ class HomeVC: UIViewController {
         // Show a loading and fetch data
         Loading.shared.showProgressView(view)
         
+        tableView.tableFooterView = UIView(frame: .zero)
     }
     
     override func viewWillAppear(_ animated: Bool) {
@@ -72,6 +73,10 @@ class HomeVC: UIViewController {
             if let indexPath = tableView.indexPathForSelectedRow {
                 let chatType = viewModel.chatType(at: indexPath.row)
                 destinationVC.chatType = chatType
+                
+                if let cell = tableView.cellForRow(at: indexPath) as? ChatCell {
+                    destinationVC.userImage = cell.profileImgView.image?.image(scaledTo: CGSize(width: 40, height: 40))?.roundImage()
+                }
             }
             
         } else if segueIdentifier(for: segue) == .CreateChatVC, let destinationVC = segue.destination as? CreateChatVC {
@@ -86,6 +91,20 @@ class HomeVC: UIViewController {
     
     @IBAction func addBtnTapped(_ sender: UIBarButtonItem) {
         performSegue(withIdentifier: .CreateChatVC, sender: nil)
+    }
+    
+    @IBAction func editBtnTapped(_ sender: UIBarButtonItem) {
+        if tableView.isEditing == true {
+            tableView.setEditing(false, animated: true)
+
+            self.navigationItem.rightBarButtonItem?.title = "Edit"
+            self.navigationItem.rightBarButtonItem?.style = .plain
+        } else {
+            tableView.setEditing(true, animated: true)
+
+            self.navigationItem.rightBarButtonItem?.style = .done
+            self.navigationItem.rightBarButtonItem?.title = "Done"
+        }
     }
 }
 
@@ -104,8 +123,14 @@ extension HomeVC: UITableViewDataSource {
             return ChatCell()
         }
         
-        let chat = viewModel.chat(at: indexPath.row)
-        let chatTitle = viewModel.chatTitle(at: indexPath.row)
+        let row = indexPath.row
+        
+        viewModel.getUserProfileImage(at: row) { (url) in
+            cell.configureImages(with: url)
+        }
+        
+        let chat = viewModel.chat(at: row)
+        let chatTitle = viewModel.chatTitle(at: row)
         cell.configureCell(chat: chat, title: chatTitle)
         cell.accessoryType = .disclosureIndicator
         
@@ -125,6 +150,26 @@ extension HomeVC: UITableViewDelegate {
         performSegue(withIdentifier: .ChatVC, sender: nil)
         tableView.deselectRow(at: indexPath, animated: true)
     }
+    
+    // Edit and delete rows
+    
+    func tableView(_ tableView: UITableView, canEditRowAt indexPath: IndexPath) -> Bool {
+        return true
+    }
+    
+    func tableView(_ tableView: UITableView, editingStyleForRowAt indexPath: IndexPath) -> UITableViewCell.EditingStyle {
+        return .delete
+    }
+    
+    func tableView(_ tableView: UITableView, editActionsForRowAt indexPath: IndexPath) -> [UITableViewRowAction]? {
+        
+        let delete = UITableViewRowAction(style: .destructive, title: "Delete") { [unowned self] (action, indexPath) in
+            // delete item at indexPath
+            let chat = self.viewModel.chat(at: indexPath.row)
+            self.viewModel.deleteChat(with: chat)
+        }
+        return [delete]
+    }
 }
 
 // MARK: - Segue
@@ -139,6 +184,10 @@ extension HomeVC: ChatsViewModelDelegate {
     func onFetchCompleted(with index: Int) {
         Loading.shared.hideProgressView()
         tableView.reloadData()
+        
+        if tableView.backgroundView != nil {
+            tableView.backgroundView = nil
+        }
     }
     
     func onUpdateCompleted(with index: Int) {
@@ -152,5 +201,11 @@ extension HomeVC: ChatsViewModelDelegate {
     func onFetchFailed(with reason: String) {
         Loading.shared.hideProgressView()
         print("Couldn't Fetch Chats with reason: ", reason)
+        
+        let label = UILabel(frame: CGRect(x: 0, y: 0, width: tableView.frame.width, height: 80))
+        label.text = "Create a new converstation by tapping '+'"
+        label.textColor = .darkGray
+        label.textAlignment = .center
+        tableView.backgroundView = label
     }
 }

@@ -12,8 +12,13 @@ pod 'SDWebImage'
 pod 'Firebase/Storage'
 pod 'Firebase/Firestore'
 pod 'Fabric'
+pod 'IQKeyboardManagerSwift'
 pod 'Crashlytics'
 pod 'GoogleSignIn'
 pod 'Firebase/Core'
 pod 'MessageKit'
+end
+
+target 'GraphTests' do
+  inherit! :search_paths
 end

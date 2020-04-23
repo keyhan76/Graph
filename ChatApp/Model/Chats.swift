@@ -41,7 +41,8 @@ struct Chats {
         self.init(data: data, docSnap: document)
     }
     
-    private init?(data: [String: Any], docSnap: DocumentSnapshot? = nil, docQuery: QueryDocumentSnapshot? = nil, downloadUrl: URL? = nil) {
+    // TODO: - Make it public for test use only
+    init?(data: [String: Any], docSnap: DocumentSnapshot? = nil, docQuery: QueryDocumentSnapshot? = nil, downloadUrl: URL? = nil) {
         guard let title = data["title"] as? String else {
             return nil
         }
@@ -58,10 +59,12 @@ struct Chats {
             return nil
         }
         
+        // TODO: - Comment this line in tests
         guard let sentDate = data["created"] as? Timestamp else {
             return nil
         }
         
+        // TODO: - make id an empty string in test cases and comment these lines
         if let docSnap = docSnap {
             id = docSnap.documentID
         } else if let docQuery = docQuery {

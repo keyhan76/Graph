@@ -7,6 +7,7 @@
 //
 
 import UIKit
+import SDWebImage
 
 class ChatCell: UITableViewCell {
     
@@ -21,7 +22,11 @@ class ChatCell: UITableViewCell {
         
         placeHolderLbl.layer.cornerRadius = placeHolderLbl.frame.width / 2
         placeHolderLbl.clipsToBounds = true
-//        placeHolderLbl.alpha = 0
+        
+        profileImgView.layer.cornerRadius = profileImgView.frame.width / 2
+        profileImgView.clipsToBounds = true
+        profileImgView.contentMode = .scaleAspectFill
+        
         profileImgView.alpha = 0
     }
 
@@ -38,5 +43,14 @@ class ChatCell: UITableViewCell {
         
         let title = title.prefix(1)
         placeHolderLbl.text = String(title)
+    }
+    
+    public func configureImages(with url: URL?) {
+        guard let url = url else { return }
+        
+        profileImgView.sd_setImage(with: url) { [unowned self] (_, _, _, _) in
+            self.placeHolderLbl.alpha = 0
+            self.profileImgView.alpha = 1
+        }
     }
 }

@@ -52,18 +52,6 @@ class MembersVC: UIViewController {
     @IBAction func cancelBtnTapped(_ sender: UIButton) {
         dismiss(animated: true, completion: nil)
     }
-    
-    /// Add Switch action
-    @objc fileprivate func addSwitchTapped(_ sender: UISwitch) {
-        // if switch is on then append id to the array
-//        if sender.isOn == true {
-//            let userId = viewModel.user(at: sender.tag).id ?? "No id"
-//            members.append(userId)
-//        } else {
-//            // if switch is off then remove id from array
-//            members.remove(at: sender.tag)
-//        }
-    }
 }
 // MARK: - TableView DataSource
 extension MembersVC: UITableViewDataSource {
@@ -94,32 +82,6 @@ extension MembersVC: UITableViewDataSource {
 
 // MARK: - TableView Delegate
 extension MembersVC: UITableViewDelegate {
-    // Create the switch for cells
-    func tableView(_ tableView: UITableView, willDisplay cell: UITableViewCell, forRowAt indexPath: IndexPath) {
-        // Create status switch
-//        let addSwitch = UISwitch(frame: CGRect(x: 254, y: 14, width: 51, height: 31))
-//        addSwitch.tag = indexPath.row
-//        addSwitch.addTarget(self, action: #selector(addSwitchTapped), for: .valueChanged)
-//        cell.accessoryType = .checkmark
-//
-//        let userId = viewModel.user(at: indexPath.row).id ?? ""
-//
-//        if members.contains(userId) {
-//            addSwitch.isOn = true
-//        } else {
-//            addSwitch.isOn = false
-//        }
-        
-//        if menu[indexPath.row].status == true {
-//            foodSwitch.isOn = true
-//        } else {
-//            foodSwitch.isOn = false
-//        }
-        
-        
-        
-    }
-    
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         
         if tableView.cellForRow(at: indexPath)?.accessoryType == .some(.none) {
