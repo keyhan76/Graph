@@ -9,6 +9,9 @@
 import UIKit
 
 class SplashVC: UIViewController {
+    
+    // MARK: - Outlets
+    @IBOutlet weak var logoImgView: UIImageView!
 
     // MARK: - Life Cycle
     override func viewDidLoad() {
@@ -51,5 +54,4 @@ class SplashVC: UIViewController {
 
         VCDismisser.shared.animateTovc(viewControllerToAnimate: vc, vctoDissmiss: self)
     }
-
 }

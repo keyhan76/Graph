@@ -41,6 +41,7 @@ struct Users {
         self.init(data: data, docSnap: document)
     }
     
+    // TODO: - Make it public for test use only
     private init?(data: [String: Any], docSnap: DocumentSnapshot? = nil, docQuery: QueryDocumentSnapshot? = nil) {
         
         guard let name = data["name"] as? String else {
@@ -57,6 +58,7 @@ struct Users {
             downloadURL = nil
         }
         
+        // TODO: - make id an empty string in test cases and comment these lines
         if let docSnap = docSnap {
             id = docSnap.documentID
         } else if let docQuery = docQuery {

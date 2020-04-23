@@ -91,9 +91,16 @@ class CreateChatViewModel {
     public func fetchAllUsers() {
         DataService.shared.fetchAllUsers { [unowned self] (querySnapshot, error) in
             if let error = error {
-                self.delegate?.onChatFailed(with: error.localizedDescription)
+                self.delegate?.onUserFetchFailed(with: error.localizedDescription)
             } else {
-                guard let snapshot = querySnapshot else { return }
+                guard let snapshot = querySnapshot else {
+                    self.delegate?.onUserFetchFailed(with: "No other users yet...")
+                    return
+                }
+                
+                if snapshot.count == 0 {
+                    self.delegate?.onUserFetchFailed(with: "No other users yet...")
+                }
                 
                 // Append datas to users array
                 snapshot.documentChanges.forEach { (change) in
@@ -111,6 +118,7 @@ class CreateChatViewModel {
         }
         
         guard user.id != currentUser?.uid else {
+            self.delegate?.onUserFetchFailed(with: "No other users yet...")
             return
         }
         
@@ -119,6 +127,13 @@ class CreateChatViewModel {
         
         // Notify the delegate
         self.delegate?.onUserFetchCompleted()
+    }
+    
+    // TODO: - Create this function ASAP
+    private func avoidDuplicateChats(_ chat: Chats) {
+        if chat.members.count == 2 {
+            
+        }
     }
 }
 

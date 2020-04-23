@@ -24,7 +24,7 @@ public class Loading {
     public func showProgressView(_ view: UIView) {
         containerView.frame = view.frame
         containerView.center = CGPoint(x: view.bounds.width / 2, y: view.bounds.height / 2)
-        containerView.backgroundColor = UIColor(hex: 0xffffff, alpha: 0.3)
+        containerView.backgroundColor = .clear
         
         progressView.frame = CGRect(x: 0, y: 0, width: 80, height: 80)
         progressView.center = CGPoint(x: view.bounds.width / 2, y: view.bounds.height / 2)

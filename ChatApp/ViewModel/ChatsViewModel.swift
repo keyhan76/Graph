@@ -67,11 +67,31 @@ class ChatsViewModel {
         }
     }
     
-//    func getUserProfileImage(at index: Int) -> URL? {
-//        let chats = chat(at: index)
-//
-//
-//    }
+    func getUserProfileImage(at index: Int, completion: @escaping (_ url: URL?) -> ())  {
+        let chats = chat(at: index)
+
+        if chats.members.count == 2 {
+            chats.members.forEach { (id) in
+                if id != chats.creatorId {
+                    DataService.shared.getUserProfileimg(id: id) { (snapShot, error) in
+                        if let error = error {
+                            print(error.localizedDescription)
+                        } else {
+                            guard let doc = snapShot else { return }
+                            
+                            let user = Users(document: doc)
+                            
+                            if let url = user?.downloadURL {
+                                completion(url)
+                            } else {
+                                completion(nil)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
     
     // MARK: - Private Helpers
     private func addChatToTable(_ chat: inout Chats) {
@@ -164,6 +184,21 @@ class ChatsViewModel {
                 print(self.chats)
             }
             self.isFetchInProgress = false
+        }
+    }
+    
+    public func deleteChat(with chat: Chats) {
+        
+        guard let id = chat.id else {
+            return
+        }
+        
+        DataService.shared.deleteChat(id: id) { [unowned self] (error) in
+            if let error = error {
+                print(error.localizedDescription)
+            } else {
+                self.removeChatFromTable(chat)
+            }
         }
     }
     

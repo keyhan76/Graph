@@ -202,6 +202,12 @@ class DataService {
         }
     }
     
+    public func getUserProfileimg(id: String, completion: @escaping (_ snapshot: DocumentSnapshot?, _ error: Error?) -> ()) {
+        userReference.document(id).getDocument { (snapShot, error) in
+            completion(snapShot, error)
+        }
+    }
+    
     public func fetchAllUsers(completion: @escaping (_ snapshot: QuerySnapshot?, _ error: Error?) -> ()) {
         userReference.getDocuments { (querySnapshot, error) in
             completion(querySnapshot, error)
@@ -209,11 +215,11 @@ class DataService {
     }
     
     public func updateUsername(new username: String, id: String, completion: ((Error?) -> Void)?) {
-        userReference.document("\(id)").updateData(["username": username], completion: completion)
+        userReference.document(id).updateData(["username": username], completion: completion)
     }
     
     public func updateUserProfileImage(new url: String, id: String, completion: ((Error?) -> Void)?) {
-        userReference.document("\(id)").updateData(["url": url], completion: completion)
+        userReference.document(id).updateData(["url": url], completion: completion)
     }
     
     
