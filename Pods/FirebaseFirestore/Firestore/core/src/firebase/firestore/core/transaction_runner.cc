@@ -14,9 +14,10 @@
  * limitations under the License.
  */
 
+#include "Firestore/core/src/firebase/firestore/core/transaction_runner.h"
+
 #include <utility>
 
-#include "Firestore/core/src/firebase/firestore/core/transaction_runner.h"
 #include "Firestore/core/src/firebase/firestore/remote/exponential_backoff.h"
 #include "absl/algorithm/container.h"
 
@@ -38,7 +39,7 @@ bool IsRetryableTransactionError(const util::Status& error) {
   // FAILED_PRECONDITION and non-matching document versions with ABORTED. These
   // errors should be retried.
   Error code = error.code();
-  return code == Error::Aborted || code == Error::FailedPrecondition ||
+  return code == Error::kAborted || code == Error::kFailedPrecondition ||
          !remote::Datastore::IsPermanentError(error);
 }
 }  // namespace
@@ -49,8 +50,8 @@ TransactionRunner::TransactionRunner(const std::shared_ptr<AsyncQueue>& queue,
                                      TransactionResultCallback result_callback)
     : queue_{queue},
       remote_store_{remote_store},
-      update_callback_{update_callback},
-      result_callback_{result_callback},
+      update_callback_{std::move(update_callback)},
+      result_callback_{std::move(result_callback)},
       backoff_{queue_, TimerId::RetryTransaction},
       retries_left_{kRetryCount} {
 }
@@ -63,43 +64,37 @@ void TransactionRunner::Run() {
     std::shared_ptr<Transaction> transaction =
         shared_this->remote_store_->CreateTransaction();
     shared_this->update_callback_(
-        transaction,
-        [transaction, shared_this](util::StatusOr<absl::any> maybe_result) {
-          shared_this->queue_->Enqueue(
-              [transaction, shared_this, maybe_result] {
-                shared_this->ContinueCommit(transaction, maybe_result);
-              });
+        transaction, [transaction, shared_this](const util::Status& status) {
+          shared_this->queue_->Enqueue([transaction, shared_this, status] {
+            shared_this->ContinueCommit(transaction, status);
+          });
         });
   });
 }
 
 void TransactionRunner::ContinueCommit(
-    const std::shared_ptr<Transaction> transaction,
-    const util::StatusOr<absl::any> maybe_result) {
-  if (!maybe_result.ok()) {
-    HandleTransactionError(transaction, maybe_result.status());
+    const std::shared_ptr<Transaction>& transaction, util::Status status) {
+  if (!status.ok()) {
+    HandleTransactionError(transaction, std::move(status));
   } else {
     auto shared_this = this->shared_from_this();
-    transaction->Commit(
-        [shared_this, transaction, maybe_result](Status status) {
-          shared_this->DispatchResult(transaction, status, maybe_result);
-        });
+    transaction->Commit([shared_this, transaction](Status commit_status) {
+      shared_this->DispatchResult(transaction, std::move(commit_status));
+    });
   }
 }
 
 void TransactionRunner::DispatchResult(
-    const std::shared_ptr<Transaction> transaction,
-    Status status,
-    const util::StatusOr<absl::any> maybe_result) {
+    const std::shared_ptr<Transaction>& transaction, Status status) {
   if (status.ok()) {
-    result_callback_(std::move(maybe_result));
+    result_callback_(std::move(status));
   } else {
-    HandleTransactionError(transaction, status);
+    HandleTransactionError(transaction, std::move(status));
   }
 }
 
 void TransactionRunner::HandleTransactionError(
-    const std::shared_ptr<Transaction> transaction, Status status) {
+    const std::shared_ptr<Transaction>& transaction, Status status) {
   if (retries_left_ > 0 && IsRetryableTransactionError(status) &&
       !transaction->IsPermanentlyFailed()) {
     retries_left_ -= 1;

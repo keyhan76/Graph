@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Google
+ * Copyright 2019 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,11 +23,16 @@
 
 #include "Firestore/core/src/firebase/firestore/api/firestore.h"
 #include "Firestore/core/src/firebase/firestore/api/query_listener_registration.h"
+#include "Firestore/core/src/firebase/firestore/api/query_snapshot.h"
+#include "Firestore/core/src/firebase/firestore/api/source.h"
+#include "Firestore/core/src/firebase/firestore/core/bound.h"
 #include "Firestore/core/src/firebase/firestore/core/field_filter.h"
 #include "Firestore/core/src/firebase/firestore/core/filter.h"
 #include "Firestore/core/src/firebase/firestore/core/firestore_client.h"
+#include "Firestore/core/src/firebase/firestore/core/listen_options.h"
 #include "Firestore/core/src/firebase/firestore/core/operator.h"
 #include "Firestore/core/src/firebase/firestore/model/field_value.h"
+#include "Firestore/core/src/firebase/firestore/model/resource_path.h"
 #include "Firestore/core/src/firebase/firestore/util/exception.h"
 #include "absl/algorithm/container.h"
 
@@ -69,7 +74,8 @@ size_t Query::Hash() const {
   return util::Hash(firestore_.get(), query());
 }
 
-void Query::GetDocuments(Source source, QuerySnapshot::Listener&& callback) {
+void Query::GetDocuments(Source source, QuerySnapshotListener&& callback) {
+  ValidateHasExplicitOrderByForLimitToLast();
   if (source == Source::Cache) {
     firestore_->client()->GetDocumentsFromLocalCache(*this,
                                                      std::move(callback));
@@ -83,7 +89,7 @@ void Query::GetDocuments(Source source, QuerySnapshot::Listener&& callback) {
 
   class ListenOnce : public EventListener<QuerySnapshot> {
    public:
-    ListenOnce(Source source, QuerySnapshot::Listener&& listener)
+    ListenOnce(Source source, QuerySnapshotListener&& listener)
         : source_(source), listener_(std::move(listener)) {
     }
 
@@ -103,7 +109,7 @@ void Query::GetDocuments(Source source, QuerySnapshot::Listener&& callback) {
 
       if (snapshot.metadata().from_cache() && source_ == Source::Server) {
         listener_->OnEvent(Status{
-            Error::Unavailable,
+            Error::kUnavailable,
             "Failed to get documents from server. (However, these documents "
             "may exist in the local cache. Run again without setting source to "
             "FirestoreSourceServer to retrieve the cached documents.)"});
@@ -118,7 +124,7 @@ void Query::GetDocuments(Source source, QuerySnapshot::Listener&& callback) {
 
    private:
     Source source_;
-    QuerySnapshot::Listener listener_;
+    QuerySnapshotListener listener_;
 
     std::promise<std::unique_ptr<ListenerRegistration>> registration_promise_;
   };
@@ -133,11 +139,12 @@ void Query::GetDocuments(Source source, QuerySnapshot::Listener&& callback) {
 }
 
 std::unique_ptr<ListenerRegistration> Query::AddSnapshotListener(
-    ListenOptions options, QuerySnapshot::Listener&& user_listener) {
+    ListenOptions options, QuerySnapshotListener&& user_listener) {
+  ValidateHasExplicitOrderByForLimitToLast();
   // Convert from ViewSnapshots to QuerySnapshots.
   class Converter : public EventListener<ViewSnapshot> {
    public:
-    Converter(Query* parent, QuerySnapshot::Listener&& user_listener)
+    Converter(Query* parent, QuerySnapshotListener&& user_listener)
         : firestore_(parent->firestore()),
           query_(parent->query()),
           user_listener_(std::move(user_listener)) {
@@ -162,7 +169,7 @@ std::unique_ptr<ListenerRegistration> Query::AddSnapshotListener(
    private:
     std::shared_ptr<Firestore> firestore_;
     core::Query query_;
-    QuerySnapshot::Listener user_listener_;
+    QuerySnapshotListener user_listener_;
   };
   auto view_listener =
       absl::make_unique<Converter>(this, std::move(user_listener));
@@ -213,12 +220,12 @@ Query Query::Filter(FieldPath field_path,
   return Wrap(query_.AddingFilter(std::move(filter)));
 }
 
-Query Query::OrderBy(FieldPath fieldPath, bool descending) const {
-  return OrderBy(fieldPath, Direction::FromDescending(descending));
+Query Query::OrderBy(FieldPath field_path, bool descending) const {
+  return OrderBy(field_path, Direction::FromDescending(descending));
 }
 
-Query Query::OrderBy(FieldPath fieldPath, Direction direction) const {
-  ValidateNewOrderByPath(fieldPath);
+Query Query::OrderBy(FieldPath field_path, Direction direction) const {
+  ValidateNewOrderByPath(field_path);
   if (query_.start_at()) {
     ThrowInvalidArgument(
         "Invalid query. You must not specify a starting point "
@@ -230,16 +237,25 @@ Query Query::OrderBy(FieldPath fieldPath, Direction direction) const {
         "before specifying the order by.");
   }
   return Wrap(
-      query_.AddingOrderBy(core::OrderBy(std::move(fieldPath), direction)));
+      query_.AddingOrderBy(core::OrderBy(std::move(field_path), direction)));
 }
 
-Query Query::Limit(int32_t limit) const {
+Query Query::LimitToFirst(int32_t limit) const {
   if (limit <= 0) {
     ThrowInvalidArgument(
         "Invalid Query. Query limit (%s) is invalid. Limit must be positive.",
         limit);
   }
-  return Wrap(query_.WithLimit(limit));
+  return Wrap(query_.WithLimitToFirst(limit));
+}
+
+Query Query::LimitToLast(int32_t limit) const {
+  if (limit <= 0) {
+    ThrowInvalidArgument(
+        "Invalid Query. Query limit (%s) is invalid. Limit must be positive.",
+        limit);
+  }
+  return Wrap(query_.WithLimitToLast(limit));
 }
 
 Query Query::StartAt(Bound bound) const {
@@ -302,27 +318,35 @@ void Query::ValidateNewFilter(const class Filter& filter) const {
   }
 }
 
-void Query::ValidateNewOrderByPath(const FieldPath& fieldPath) const {
+void Query::ValidateNewOrderByPath(const FieldPath& field_path) const {
   if (!query_.FirstOrderByField()) {
     // This is the first order by. It must match any inequality.
-    const FieldPath* inequalityField = query_.InequalityFilterField();
-    if (inequalityField) {
-      ValidateOrderByField(fieldPath, *inequalityField);
+    const FieldPath* inequality_field = query_.InequalityFilterField();
+    if (inequality_field) {
+      ValidateOrderByField(field_path, *inequality_field);
     }
   }
 }
 
-void Query::ValidateOrderByField(const FieldPath& orderByField,
-                                 const FieldPath& inequalityField) const {
-  if (orderByField != inequalityField) {
+void Query::ValidateOrderByField(const FieldPath& order_by_field,
+                                 const FieldPath& inequality_field) const {
+  if (order_by_field != inequality_field) {
     ThrowInvalidArgument(
         "Invalid query. You have a where filter with an inequality "
         "(lessThan, lessThanOrEqual, greaterThan, or greaterThanOrEqual) on "
         "field '%s' and so you must also use '%s' as your first queryOrderedBy "
         "field, but your first queryOrderedBy is currently on field '%s' "
         "instead.",
-        inequalityField.CanonicalString(), inequalityField.CanonicalString(),
-        orderByField.CanonicalString());
+        inequality_field.CanonicalString(), inequality_field.CanonicalString(),
+        order_by_field.CanonicalString());
+  }
+}
+
+void Query::ValidateHasExplicitOrderByForLimitToLast() const {
+  if (query_.has_limit_to_last() && query_.explicit_order_bys().empty()) {
+    ThrowInvalidArgument(
+        "limit(toLast:) queries require specifying at least one OrderBy() "
+        "clause.");
   }
 }
 

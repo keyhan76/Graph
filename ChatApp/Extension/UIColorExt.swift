@@ -11,7 +11,7 @@ import UIKit
 extension UIColor {
   
   static var primary: UIColor {
-    return #colorLiteral(red: 0.2666666667, green: 0.1960784314, blue: 0.6784313725, alpha: 1)
+    return UIColor(red: 69/255, green: 193/255, blue: 89/255, alpha: 1)
   }
   
   static var incomingMessage: UIColor {

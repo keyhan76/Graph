@@ -151,7 +151,7 @@ class ChatVC: MessagesViewController {
 extension ChatVC: MessagesDisplayDelegate {
     
     func textColor(for message: MessageType, at indexPath: IndexPath, in messagesCollectionView: MessagesCollectionView) -> UIColor {
-        return isFromCurrentSender(message: message) ? .black : .black
+        return isFromCurrentSender(message: message) ? .white : .darkText
     }
    
     func detectorAttributes(for detector: DetectorType, and message: MessageType, at indexPath: IndexPath) -> [NSAttributedString.Key: Any] {
@@ -160,7 +160,7 @@ extension ChatVC: MessagesDisplayDelegate {
             if isFromCurrentSender(message: message) {
                 return [.foregroundColor: UIColor.white]
             } else {
-                return [.foregroundColor: UIColor.white]
+                return [.foregroundColor: UIColor.primary]
             }
         default: return MessageLabel.defaultAttributes
         }
@@ -206,34 +206,13 @@ extension ChatVC: MessagesDisplayDelegate {
                 corners.formUnion(.bottomLeft)
             }
         }
-        
 
-        return .custom { [unowned self] view in
+        return .custom { view in
             let radius: CGFloat = 16
             let path = UIBezierPath(roundedRect: view.bounds, byRoundingCorners: corners, cornerRadii: CGSize(width: radius, height: radius))
             let mask = CAShapeLayer()
             mask.path = path.cgPath
             view.layer.mask = mask
-//            if self.isFromCurrentSender(message: message) {
-//                gradientLayer.colors = [#colorLiteral(red: 0.2666666667, green: 0.1960784314, blue: 0.6784313725, alpha: 1).cgColor, #colorLiteral(red: 0.3098039216, green: 0.6980392157, blue: 0.9921568627, alpha: 1).cgColor]
-//                gradientLayer.startPoint = CGPoint(x: 0.0, y: 0.5)
-//                gradientLayer.endPoint = CGPoint(x: 1.0, y: 0.5)
-//
-//                gradientLayer.locations = [0.15, 1.0]
-//                gradientLayer.frame = view.bounds
-//
-//                view.layer.insertSublayer(gradientLayer, below: view.layer.sublayers?.last)
-//            } else {
-//                gradientLayer.colors = [#colorLiteral(red: 0.1294117647, green: 0.1568627451, blue: 0.2588235294, alpha: 1).cgColor, #colorLiteral(red: 0.07843137255, green: 0.1098039216, blue: 0.2196078431, alpha: 1).cgColor]
-//                gradientLayer.startPoint = CGPoint(x: 0.0, y: 0.5)
-//                gradientLayer.endPoint = CGPoint(x: 1.0, y: 0.5)
-//
-//                gradientLayer.locations = [0.15, 1.0]
-//                gradientLayer.frame = view.bounds
-//
-//                view.layer.insertSublayer(gradientLayer, below: view.layer.sublayers?.last)
-//            }
-            
         }
     }
     
@@ -281,7 +260,7 @@ extension ChatVC: MessagesLayoutDelegate {
 
 // MARK: - MessageInputBarDelegate
 
-extension ChatVC: MessageInputBarDelegate {
+extension ChatVC: InputBarAccessoryViewDelegate {
     func inputBar(_ inputBar: InputBarAccessoryView, didPressSendButtonWith text: String) {
         
         guard let id = chatId else {
@@ -299,7 +278,7 @@ extension ChatVC: MessageInputBarDelegate {
 
 extension ChatVC: MessagesDataSource {
     func currentSender() -> SenderType {
-        return Sender(id: user.uid, displayName: DataService.shared.name ?? "")
+        return SenderUser(senderId: user.uid, displayName: DataService.shared.name ?? "")
     }
     
     func numberOfSections(in messagesCollectionView: MessagesCollectionView) -> Int {

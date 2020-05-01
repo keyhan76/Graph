@@ -88,7 +88,7 @@
 			<key>orderHint</key>
 			<integer>12</integer>
 		</dict>
-		<key>FirebaseInstanceID.xcscheme</key>
+		<key>FirebaseInstallations.xcscheme</key>
 		<dict>
 			<key>isShown</key>
 			<false/>
@@ -193,12 +193,19 @@
 			<key>orderHint</key>
 			<integer>32</integer>
 		</dict>
-		<key>SDWebImage.xcscheme</key>
+		<key>PromisesObjC.xcscheme</key>
 		<dict>
 			<key>isShown</key>
 			<false/>
 			<key>orderHint</key>
 			<integer>33</integer>
+		</dict>
+		<key>SDWebImage.xcscheme</key>
+		<dict>
+			<key>isShown</key>
+			<false/>
+			<key>orderHint</key>
+			<integer>34</integer>
 		</dict>
 		<key>abseil.xcscheme</key>
 		<dict>

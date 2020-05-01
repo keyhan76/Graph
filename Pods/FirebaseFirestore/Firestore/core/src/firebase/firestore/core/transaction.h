@@ -25,7 +25,6 @@
 
 #include "Firestore/core/src/firebase/firestore/model/document_key.h"
 #include "Firestore/core/src/firebase/firestore/model/mutation.h"
-#include "Firestore/core/src/firebase/firestore/model/precondition.h"
 #include "Firestore/core/src/firebase/firestore/model/snapshot_version.h"
 #include "Firestore/core/src/firebase/firestore/util/status.h"
 #include "Firestore/core/src/firebase/firestore/util/statusor.h"
@@ -34,10 +33,13 @@
 
 namespace firebase {
 namespace firestore {
+
+namespace model {
+class Precondition;
+}  // namespace model
+
 namespace remote {
-
 class Datastore;
-
 }  // namespace remote
 
 namespace core {
@@ -130,7 +132,7 @@ class Transaction {
 
   std::vector<model::Mutation> mutations_;
   bool committed_ = false;
-  bool permanentError_ = false;
+  bool permanent_error_ = false;
 
   /**
    * A deferred usage error that occurred previously in this transaction that
@@ -152,7 +154,7 @@ class Transaction {
       read_versions_;
 };
 
-using TransactionResultCallback = util::StatusOrCallback<absl::any>;
+using TransactionResultCallback = util::StatusCallback;
 
 /**
  * TransactionUpdateCallback is a block that wraps a user's transaction update

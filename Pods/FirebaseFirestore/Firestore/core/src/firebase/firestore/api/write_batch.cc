@@ -20,6 +20,7 @@
 
 #include "Firestore/core/src/firebase/firestore/api/document_reference.h"
 #include "Firestore/core/src/firebase/firestore/api/firestore.h"
+#include "Firestore/core/src/firebase/firestore/api/query_snapshot.h"
 #include "Firestore/core/src/firebase/firestore/core/firestore_client.h"
 #include "Firestore/core/src/firebase/firestore/core/user_data.h"
 #include "Firestore/core/src/firebase/firestore/model/delete_mutation.h"
@@ -36,23 +37,23 @@ using util::ThrowIllegalState;
 using util::ThrowInvalidArgument;
 
 void WriteBatch::SetData(const DocumentReference& reference,
-                         core::ParsedSetData&& setData) {
+                         core::ParsedSetData&& set_data) {
   VerifyNotCommitted();
   ValidateReference(reference);
 
-  std::vector<Mutation> append_mutations = std::move(setData).ToMutations(
+  std::vector<Mutation> append_mutations = std::move(set_data).ToMutations(
       reference.key(), model::Precondition::None());
   std::move(append_mutations.begin(), append_mutations.end(),
             std::back_inserter(mutations_));
 }
 
 void WriteBatch::UpdateData(const DocumentReference& reference,
-                            core::ParsedUpdateData&& updateData) {
+                            core::ParsedUpdateData&& update_data) {
   VerifyNotCommitted();
   ValidateReference(reference);
 
   std::vector<Mutation> append_mutations =
-      std::move(updateData)
+      std::move(update_data)
           .ToMutations(reference.key(), model::Precondition::Exists(true));
   std::move(append_mutations.begin(), append_mutations.end(),
             std::back_inserter(mutations_));
