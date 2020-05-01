@@ -15,7 +15,10 @@ struct Message: MessageType {
     let id: String?
     let content: String
     let sentDate: Date
-    let sender: SenderType
+    var sender: SenderType {
+        return senderUser
+    }
+    var senderUser: SenderUser
     let chatId: String?
     
     var kind: MessageKind {
@@ -37,7 +40,7 @@ struct Message: MessageType {
     var downloadURL: URL? = nil
     
     init(user: User, content: String, chatId: String) {
-        sender = Sender(id: user.uid, displayName: DataService.shared.name ?? "unknown")
+        senderUser = SenderUser(senderId: user.uid, displayName: DataService.shared.name ?? "unknown")
         self.content = content
         sentDate = Date()
         id = nil
@@ -45,7 +48,7 @@ struct Message: MessageType {
     }
     
     init(user: User, image: UIImage, chatId: String) {
-        sender = Sender(id: user.uid, displayName: DataService.shared.name ?? "unknown")
+        senderUser = SenderUser(senderId: user.uid, displayName: DataService.shared.name ?? "unknown")
         self.image = image
         content = ""
         sentDate = Date()
@@ -73,7 +76,7 @@ struct Message: MessageType {
         self.chatId = chatId
         
         self.sentDate = sentDate.dateValue()
-        sender = Sender(id: senderID, displayName: senderName)
+        senderUser = SenderUser(senderId: senderID, displayName: senderName)
         
         if let content = data["content"] as? String {
             self.content = content
@@ -136,4 +139,10 @@ private struct ImageMediaItem: MediaItem {
         self.placeholderImage = UIImage()
     }
     
+}
+
+struct SenderUser: SenderType {
+    var senderId: String
+    
+    var displayName: String
 }

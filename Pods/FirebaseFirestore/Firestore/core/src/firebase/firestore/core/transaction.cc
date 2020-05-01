@@ -23,6 +23,7 @@
 #include "Firestore/core/include/firebase/firestore/firestore_errors.h"
 #include "Firestore/core/src/firebase/firestore/core/user_data.h"
 #include "Firestore/core/src/firebase/firestore/model/delete_mutation.h"
+#include "Firestore/core/src/firebase/firestore/model/verify_mutation.h"
 #include "Firestore/core/src/firebase/firestore/remote/datastore.h"
 #include "Firestore/core/src/firebase/firestore/util/hard_assert.h"
 
@@ -36,6 +37,7 @@ using firebase::firestore::model::MaybeDocument;
 using firebase::firestore::model::Mutation;
 using firebase::firestore::model::Precondition;
 using firebase::firestore::model::SnapshotVersion;
+using firebase::firestore::model::VerifyMutation;
 using firebase::firestore::remote::Datastore;
 using firebase::firestore::util::Status;
 using firebase::firestore::util::StatusOr;
@@ -65,7 +67,7 @@ Status Transaction::RecordVersion(const MaybeDocument& doc) {
   if (existing_version.has_value()) {
     if (doc_version != existing_version.value()) {
       // This transaction will fail no matter what.
-      return Status{Error::Aborted,
+      return Status{Error::kAborted,
                     "Document version changed between two reads."};
     }
     return Status::OK();
@@ -80,7 +82,7 @@ void Transaction::Lookup(const std::vector<DocumentKey>& keys,
   EnsureCommitNotCalled();
 
   if (!mutations_.empty()) {
-    Status lookup_error = Status{Error::InvalidArgument,
+    Status lookup_error = Status{Error::kInvalidArgument,
                                  "Firestore transactions require all reads to "
                                  "be executed before all writes"};
     callback(lookup_error);
@@ -144,7 +146,7 @@ StatusOr<Precondition> Transaction::CreateUpdatePrecondition(
       //
       // Note: this can change once we can send separate verify writes in the
       // transaction.
-      return Status{Error::InvalidArgument,
+      return Status{Error::kInvalidArgument,
                     "Can't update a document that doesn't exist."};
     }
     // Document exists, just base precondition on document update time.
@@ -197,25 +199,21 @@ void Transaction::Commit(util::StatusCallback&& callback) {
     unwritten.erase(mutation.key());
   }
 
-  if (!unwritten.empty()) {
-    // TODO(klimt): This is a temporary restriction, until "verify" is supported
-    // on the backend.
-    callback(
-        Status{Error::InvalidArgument,
-               "Every document read in a transaction must also be written in "
-               "that transaction."});
-  } else {
-    committed_ = true;
-    datastore_->CommitMutations(mutations_, std::move(callback));
+  // For each document that was read but not written to, we want to perform a
+  // `verify` operation.
+  for (const DocumentKey& key : unwritten) {
+    mutations_.push_back(VerifyMutation(key, CreatePrecondition(key)));
   }
+  committed_ = true;
+  datastore_->CommitMutations(mutations_, std::move(callback));
 }
 
 void Transaction::MarkPermanentlyFailed() {
-  permanentError_ = true;
+  permanent_error_ = true;
 }
 
 bool Transaction::IsPermanentlyFailed() const {
-  return permanentError_;
+  return permanent_error_;
 }
 
 void Transaction::EnsureCommitNotCalled() {

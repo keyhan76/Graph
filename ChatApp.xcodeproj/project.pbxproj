@@ -781,17 +781,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = M9X7FR57FM;
 				FRAMEWORK_SEARCH_PATHS = "";
-				HEADER_SEARCH_PATHS = (
-					HEADER_SEARCH_PATHS,
-					"=",
-					"\"${PODS_ROOT}/Firebase/CoreOnly/Sources\"\nHEADER_SEARCH_PATHS",
-					"=",
-					"\"${PODS_ROOT}/Firebase/CoreOnly/Sources\"\nHEADER_SEARCH_PATHS",
-					"=",
-					"\"${PODS_ROOT}/Firebase/CoreOnly/Sources\"\nHEADER_SEARCH_PATHS",
-					"=",
-					"\"${PODS_ROOT}/Firebase/CoreOnly/Sources\"\n",
-				);
+				HEADER_SEARCH_PATHS = "$(inherited)";
 				INFOPLIST_FILE = GraphTests/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 13.1;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -815,17 +805,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = M9X7FR57FM;
 				FRAMEWORK_SEARCH_PATHS = "";
-				HEADER_SEARCH_PATHS = (
-					HEADER_SEARCH_PATHS,
-					"=",
-					"\"${PODS_ROOT}/Firebase/CoreOnly/Sources\"\nHEADER_SEARCH_PATHS",
-					"=",
-					"\"${PODS_ROOT}/Firebase/CoreOnly/Sources\"\nHEADER_SEARCH_PATHS",
-					"=",
-					"\"${PODS_ROOT}/Firebase/CoreOnly/Sources\"\nHEADER_SEARCH_PATHS",
-					"=",
-					"\"${PODS_ROOT}/Firebase/CoreOnly/Sources\"\n",
-				);
+				HEADER_SEARCH_PATHS = "$(inherited)";
 				INFOPLIST_FILE = GraphTests/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 13.1;
 				LD_RUNPATH_SEARCH_PATHS = (

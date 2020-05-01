@@ -63,7 +63,7 @@ size_t CollectionReference::Hash() const {
   return util::Hash(firestore().get(), query());
 }
 
-std::string CollectionReference::collection_id() const {
+const std::string& CollectionReference::collection_id() const {
   return query().path().last_segment();
 }
 
@@ -81,7 +81,7 @@ std::string CollectionReference::path() const {
 }
 
 DocumentReference CollectionReference::Document(
-    absl::string_view document_path) const {
+    const std::string& document_path) const {
   ResourcePath sub_path = ResourcePath::FromString(document_path);
   ResourcePath path = query().path().Append(sub_path);
   return DocumentReference(std::move(path), firestore());

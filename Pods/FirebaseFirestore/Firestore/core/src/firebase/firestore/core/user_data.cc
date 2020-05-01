@@ -18,12 +18,14 @@
 
 #include <utility>
 
+#include "Firestore/core/src/firebase/firestore/model/maybe_document.h"
 #include "Firestore/core/src/firebase/firestore/model/mutation.h"
 #include "Firestore/core/src/firebase/firestore/model/patch_mutation.h"
 #include "Firestore/core/src/firebase/firestore/model/set_mutation.h"
 #include "Firestore/core/src/firebase/firestore/model/transform_mutation.h"
 #include "Firestore/core/src/firebase/firestore/model/transform_operation.h"
 #include "Firestore/core/src/firebase/firestore/util/exception.h"
+#include "absl/memory/memory.h"
 #include "absl/strings/match.h"
 
 namespace firebase {
@@ -123,10 +125,10 @@ ParseContext ParseContext::ChildContext(const std::string& field_name) {
   return context;
 }
 
-ParseContext ParseContext::ChildContext(const FieldPath& fieldPath) {
+ParseContext ParseContext::ChildContext(const FieldPath& field_path) {
   std::unique_ptr<FieldPath> path;
   if (path_) {
-    path = absl::make_unique<FieldPath>(path_->Append(fieldPath));
+    path = absl::make_unique<FieldPath>(path_->Append(field_path));
   }
 
   ParseContext context{accumulator_, std::move(path), false};
